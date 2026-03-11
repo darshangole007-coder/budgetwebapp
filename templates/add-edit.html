@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card p-4">
+  {% if tx %}
+    <h3>Edit Transaction</h3>
+    <form method="POST" action="{{ url_for('add_edit', tx_id=tx.id) }}">
+  {% else %}
+    <h3>Add Transaction</h3>
+    <form method="POST" action="{{ url_for('add_edit') }}">
+  {% endif %}
+    <div class="mb-3">
+      <label>Date</label>
+      <input type="date" name="date" class="form-control" value="{{ tx.date if tx else '' }}">
+    </div>
+    <div class="mb-3">
+      <label>Type</label>
+      <select name="type" class="form-control">
+        <option value="expense" {% if tx and tx.type=='expense' %}selected{% endif %}>Expense</option>
+        <option value="income" {% if tx and tx.type=='income' %}selected{% endif %}>Income</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label>Amount</label>
+      <input name="amount" class="form-control" type="number" step="0.01" value="{{ tx.amount if tx else '' }}" required>
+    </div>
+    <div class="mb-3">
+      <label>Category</label>
+      <select name="category" class="form-control">
+        {% for c in categories %}
+          <option {% if tx and tx.category==c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label>Note</label>
+      <input name="note" class="form-control" value="{{ tx.note if tx else '' }}">
+    </div>
+    <button class="btn btn-primary">Save</button>
+    <a class="btn btn-secondary" href="{{ url_for('index') }}">Cancel</a>
+  </form>
+</div>
+{% endblock %}
