@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+  <div class="col-md-5">
+    <div class="card p-3 mb-3">
+      <h5>Balance</h5>
+      <h2>
+        {% if balance >= 0 %}
+          <span class="text-success">₹{{ '%.2f'|format(balance) }}</span>
+        {% else %}
+          <span class="text-danger">₹{{ '%.2f'|format(balance) }}</span>
+        {% endif %}
+      </h2>
+      <div>Income: <strong class="text-success">₹{{ '%.2f'|format(total_income) }}</strong></div>
+      <div>Expense: <strong class="text-danger">₹{{ '%.2f'|format(total_expense) }}</strong></div>
+    </div>
+
+    <div class="card p-3 mb-3">
+      <h5>Add Transaction</h5>
+      <form action="{{ url_for('add_edit') }}" method="POST">
+        <div class="mb-2">
+          <label>Date</label>
+          <input class="form-control" type="date" name="date" value="{{ (None) }}">
+        </div>
+        <div class="mb-2">
+          <label>Type</label>
+          <select name="type" class="form-control">
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+          </select>
+        </div>
+        <div class="mb-2">
+          <label>Amount</label>
+          <input class="form-control" name="amount" required type="number" step="0.01">
+        </div>
+        <div class="mb-2">
+          <label>Category</label>
+          <select name="category" class="form-control">
+            {% for c in categories %}
+              <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-2">
+          <label>Note</label>
+          <input class="form-control" name="note">
+        </div>
+        <button class="btn btn-primary w-100">Add</button>
+      </form>
+
+      <form action="{{ url_for('add_category') }}" method="POST" class="mt-2">
+        <div class="input-group">
+          <input name="name" class="form-control" placeholder="Add category">
+          <button class="btn btn-outline-secondary">Add Category</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+  <div class="col-md-7">
+    <div class="card p-3 mb-3">
+      <h5>Recent Transactions</h5>
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+            <tr><th>Date</th><th>Type</th><th>Amount</th><th>Category</th><th>Note</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {% for t in transactions %}
+            <tr>
+              <td>{{ t.date }}</td>
+              <td>{{ t.type }}</td>
+              <td class="{{ 'text-success' if t.type=='income' else 'text-danger' }}">₹{{ '%.2f'|format(t.amount) }}</td>
+              <td>{{ t.category }}</td>
+              <td>{{ t.note }}</td>
+              <td>
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('add_edit', tx_id=t.id) }}">Edit</a>
+                <form style="display:inline" method="post" action="{{ url_for('delete', tx_id=t.id) }}" onsubmit="return confirm('Delete this transaction?')">
+                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card p-3">
+      <h5>Category Breakdown (This Month)</h5>
+      <canvas id="catChart" height="120"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+async function loadSummary(){
+  const res = await fetch('/api/summary');
+  const j = await res.json();
+  const labels = j.data.map(d => d.category);
+  const expenses = j.data.map(d => d.expense);
+  const incomes = j.data.map(d => d.income);
+
+  const ctx = document.getElementById('catChart').getContext('2d');
+  window.catChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Expense', data: expenses, backgroundColor: 'rgba(255,99,132,0.6)' },
+        { label: 'Income', data: incomes, backgroundColor: 'rgba(54,162,235,0.6)' }
+      ]
+    },
+    options: { responsive:true, scales:{ y:{ beginAtZero:true } } }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', loadSummary);
+</script>
+{% endblock %}
